@@ -15,8 +15,9 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ message: "Người dùng không tồn tại." }, { status: 404 });
   }
 
-  users[idx].status = users[idx].status === "ACTIVE" ? "BANNED" : "ACTIVE";
-  const { password: _pw, ...safeUser } = users[idx];
+  const target = users[idx]!;
+  target.status = target.status === "ACTIVE" ? "BANNED" : "ACTIVE";
+  const { password: _pw, ...safeUser } = target;
   return NextResponse.json({ user: safeUser }, { status: 200 });
 }
 
