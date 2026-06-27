@@ -10,21 +10,21 @@ declare global {
   var _mongooseCache: MongooseCache | undefined;
 }
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI is not defined in environment variables.");
-}
-
 const cached: MongooseCache = global._mongooseCache ?? { conn: null, promise: null };
 global._mongooseCache = cached;
 
 export async function dbConnect(): Promise<typeof mongoose> {
+  const MONGODB_URI = process.env.MONGODB_URI;
+
+  if (!MONGODB_URI) {
+    throw new Error("MONGODB_URI is not defined in environment variables.");
+  }
+
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
     cached.promise = mongoose
-      .connect(MONGODB_URI as string, {
+      .connect(MONGODB_URI, {
         dbName: "rauma_db",
         bufferCommands: false,
       })
