@@ -3,7 +3,16 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Leaf, Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
+import {
+  Leaf,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  User,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
@@ -14,57 +23,67 @@ import {
   CardTitle,
   CardDescription,
 } from "@workspace/ui/components/card";
-import { useApp } from "@/context/AppContext";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
-  const { loginAction } = useApp();
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
-    if (!email.trim()) {
-      setError("Vui lòng nhập địa chỉ email.");
+    if (!name.trim()) {
+      setError("Vui lòng nhập họ và tên.");
       return;
     }
-    if (!password.trim()) {
-      setError("Vui lòng nhập mật khẩu.");
+    if (!email.trim()) {
+      setError("Vui lòng nhập địa chỉ email.");
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError("Địa chỉ email không hợp lệ.");
       return;
     }
+    if (password.length < 6) {
+      setError("Mật khẩu phải có ít nhất 6 ký tự.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Xác nhận mật khẩu không khớp.");
+      return;
+    }
 
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          password,
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message ?? "Đăng nhập thất bại. Vui lòng thử lại.");
+        setError(data.message ?? "Đăng ký thất bại. Vui lòng thử lại.");
         return;
       }
 
-      loginAction(data.user);
-
-      if (data.user.role === "ADMIN") {
-        router.push("/admin");
-      } else {
-        router.push("/");
-      }
+      setSuccess("Đăng ký thành công! Đang chuyển hướng đến trang đăng nhập...");
+      setTimeout(() => router.push("/login"), 1500);
     } catch {
       setError("Lỗi kết nối. Vui lòng kiểm tra mạng và thử lại.");
     } finally {
@@ -74,14 +93,12 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
-      {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-green-200/30 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl" />
       </div>
 
       <div className="w-full max-w-md relative">
-        {/* Logo / Brand header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3 group">
             <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-green-200 group-hover:scale-105 transition-transform">
@@ -100,16 +117,34 @@ export default function LoginPage() {
           <div className="h-1 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500" />
           <CardHeader className="px-8 pt-8 pb-2 text-center">
             <CardTitle className="text-2xl font-bold text-gray-800">
-              Đăng nhập
+              Tạo tài khoản
             </CardTitle>
             <CardDescription className="text-gray-500 mt-1">
-              Chào mừng bạn quay trở lại! Vui lòng đăng nhập để tiếp tục.
+              Đăng ký để trải nghiệm mua sắm tại Rau Má Đặc Sản.
             </CardDescription>
           </CardHeader>
 
           <CardContent className="px-8 pb-8 pt-6">
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Email */}
+              <div className="space-y-1.5">
+                <Label htmlFor="name" className="text-gray-700">
+                  Họ và tên
+                </Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    id="name"
+                    type="text"
+                    autoComplete="name"
+                    placeholder="Nguyễn Văn A"
+                    className="pl-10 h-11 border-gray-200 focus-visible:border-green-400 focus-visible:ring-green-500/20"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
               <div className="space-y-1.5">
                 <Label htmlFor="email" className="text-gray-700">
                   Địa chỉ Email
@@ -129,7 +164,6 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Password */}
               <div className="space-y-1.5">
                 <Label htmlFor="password" className="text-gray-700">
                   Mật khẩu
@@ -139,8 +173,8 @@ export default function LoginPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    placeholder="Nhập mật khẩu"
+                    autoComplete="new-password"
+                    placeholder="Ít nhất 6 ký tự"
                     className="pl-10 pr-10 h-11 border-gray-200 focus-visible:border-green-400 focus-visible:ring-green-500/20"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -160,7 +194,36 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Error message */}
+              <div className="space-y-1.5">
+                <Label htmlFor="confirmPassword" className="text-gray-700">
+                  Xác nhận mật khẩu
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    placeholder="Nhập lại mật khẩu"
+                    className="pl-10 pr-10 h-11 border-gray-200 focus-visible:border-green-400 focus-visible:ring-green-500/20"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
               {error && (
                 <div className="flex items-start gap-2.5 p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700">
                   <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -168,7 +231,13 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* Submit */}
+              {success && (
+                <div className="flex items-start gap-2.5 p-3.5 bg-green-50 border border-green-200 rounded-xl text-green-700">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm leading-snug">{success}</p>
+                </div>
+              )}
+
               <Button
                 type="submit"
                 disabled={loading}
@@ -196,35 +265,22 @@ export default function LoginPage() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                       />
                     </svg>
-                    Đang đăng nhập...
+                    Đang tạo tài khoản...
                   </span>
                 ) : (
-                  "Đăng nhập"
+                  "Tạo tài khoản"
                 )}
               </Button>
-
-              {/* Demo hint */}
-              <div className="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-xl space-y-1">
-                <p className="text-xs font-semibold text-blue-700">
-                  Tài khoản demo:
-                </p>
-                <p className="text-xs text-blue-600">
-                  Admin: <span className="font-mono">admin@ecommerce.com</span> / <span className="font-mono">admin123</span>
-                </p>
-                <p className="text-xs text-blue-600">
-                  Khách: <span className="font-mono">customer@ecommerce.com</span> / <span className="font-mono">user123</span>
-                </p>
-              </div>
             </form>
 
             <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-gray-500">
-                Chưa có tài khoản?{" "}
+                Đã có tài khoản?{" "}
                 <Link
-                  href="/register"
+                  href="/login"
                   className="text-green-600 font-medium hover:text-green-700 transition-colors"
                 >
-                  Đăng ký ngay
+                  Đăng nhập
                 </Link>
               </p>
               <Link

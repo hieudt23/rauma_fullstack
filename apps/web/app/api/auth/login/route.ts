@@ -1,14 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { dbConnect } from "@/lib/dbConnect";
 import UserModel from "@/models/User";
 import { Types } from "mongoose";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { email, password } = body as { email: string; password: string };
+    let body: Record<string, unknown>;
+    try {
+      const parsed = await req.json();
+      if (!parsed || typeof parsed !== "object") {
+        return NextResponse.json(
+          { message: "Dữ liệu yêu cầu không hợp lệ." },
+          { status: 400 }
+        );
+      }
+      body = parsed as Record<string, unknown>;
+    } catch {
+      return NextResponse.json(
+        { message: "Dữ liệu yêu cầu không hợp lệ." },
+        { status: 400 }
+      );
+    }
 
-    if (!email || !password) {
+    const email = typeof body.email === "string" ? body.email : "";
+    const password = typeof body.password === "string" ? body.password : "";
+
+    if (!email.trim() || !password) {
       return NextResponse.json(
         { message: "Email và mật khẩu không được để trống." },
         { status: 400 }
@@ -17,19 +35,22 @@ export async function POST(req: NextRequest) {
 
     await dbConnect();
 
-    const user = await UserModel.findOne({ email: email.toLowerCase().trim() }).lean();
+    const user = await UserModel.findOne({
+      email: email.toLowerCase().trim(),
+    }).lean();
 
-    if (!user || user.password !== password) {
+    if (!user || user.status === "BANNED") {
       return NextResponse.json(
         { message: "Email hoặc mật khẩu không đúng." },
         { status: 401 }
       );
     }
 
-    if (user.status === "BANNED") {
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
       return NextResponse.json(
-        { message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ hỗ trợ." },
-        { status: 403 }
+        { message: "Email hoặc mật khẩu không đúng." },
+        { status: 401 }
       );
     }
 
@@ -42,7 +63,8 @@ export async function POST(req: NextRequest) {
     };
 
     return NextResponse.json({ user: safeUser }, { status: 200 });
-  } catch {
+  } catch (error) {
+    console.error("[POST /api/auth/login]", error);
     return NextResponse.json(
       { message: "Lỗi server. Vui lòng thử lại." },
       { status: 500 }

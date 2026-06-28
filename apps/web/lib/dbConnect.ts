@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -10,7 +11,10 @@ declare global {
   var _mongooseCache: MongooseCache | undefined;
 }
 
-const cached: MongooseCache = global._mongooseCache ?? { conn: null, promise: null };
+const cached: MongooseCache = global._mongooseCache ?? {
+  conn: null,
+  promise: null,
+};
 global._mongooseCache = cached;
 
 export async function dbConnect(): Promise<typeof mongoose> {
@@ -34,7 +38,16 @@ export async function dbConnect(): Promise<typeof mongoose> {
       });
   }
 
-  cached.conn = await cached.promise;
+  try {
+    cached.conn = await cached.promise;
+  } catch (err) {
+    // Reset so the next request can attempt a fresh connection instead of
+    // re-awaiting a permanently-rejected promise.
+    cached.promise = null;
+    cached.conn = null;
+    throw err;
+  }
+
   return cached.conn;
 }
 
@@ -44,18 +57,22 @@ async function seedDatabase(conn: mongoose.Connection): Promise<void> {
 
   const userCount = await usersCol.countDocuments();
   if (userCount === 0) {
+    const [adminHash, userHash] = await Promise.all([
+      bcrypt.hash("admin123", 10),
+      bcrypt.hash("user123", 10),
+    ]);
     await usersCol.insertMany([
       {
         name: "Quản Trị Viên",
         email: "admin@ecommerce.com",
-        password: "admin123",
+        password: adminHash,
         role: "ADMIN",
         status: "ACTIVE",
       },
       {
         name: "Nguyễn Văn Khách",
         email: "customer@ecommerce.com",
-        password: "user123",
+        password: userHash,
         role: "USER",
         status: "ACTIVE",
       },
@@ -79,7 +96,7 @@ async function seedDatabase(conn: mongoose.Connection): Promise<void> {
       {
         name: "Trà rau má sấy khô cao cấp",
         description:
-          "Rau má Việt Nam sấy lạnh theo công nghệ hiện đại, giữ nguyên hương vị và dưỡng chất quý. Pha trà uống mỗi ngày bổ sung vitamin K, C và khoáng chất thiết yếu.",
+          "Rau má Việt Nam sấy lạnh theo công nghệ hiện đại, giữ nguyên hương vị và dưỡng chất quý. Pha trà uống mỗi ngày bổ sung vitamin K, C và khoáng chất thiết yếy.",
         price: 45000,
         stock: 30,
         category: "Nước uống",

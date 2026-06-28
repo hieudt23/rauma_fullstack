@@ -32,9 +32,14 @@ export interface CartItem {
   quantity: number;
 }
 
+const AUTH_SESSION_KEY = "auth_session";
+const CART_KEY = "rauma_cart";
+
 interface AppContextType {
   user: AppUser | null;
   setUser: (user: AppUser | null) => void;
+  loginAction: (userData: AppUser) => void;
+  logoutAction: () => void;
   cart: CartItem[];
   addToCart: (product: AppProduct) => void;
   removeFromCart: (productId: string) => void;
@@ -48,7 +53,7 @@ const AppContext = createContext<AppContextType | null>(null);
 
 function persistCart(cart: CartItem[]) {
   if (typeof window !== "undefined") {
-    localStorage.setItem("rauma_cart", JSON.stringify(cart));
+    localStorage.setItem(CART_KEY, JSON.stringify(cart));
   }
 }
 
@@ -59,8 +64,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const storedUser = localStorage.getItem("rauma_user");
-      const storedCart = localStorage.getItem("rauma_cart");
+      const storedUser = localStorage.getItem(AUTH_SESSION_KEY);
+      const storedCart = localStorage.getItem(CART_KEY);
       if (storedUser) {
         try {
           setUserState(JSON.parse(storedUser));
@@ -78,10 +83,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const setUser = useCallback((u: AppUser | null) => {
     setUserState(u);
     if (typeof window !== "undefined") {
-      if (u) localStorage.setItem("rauma_user", JSON.stringify(u));
-      else localStorage.removeItem("rauma_user");
+      if (u) localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(u));
+      else localStorage.removeItem(AUTH_SESSION_KEY);
     }
   }, []);
+
+  const loginAction = useCallback(
+    (userData: AppUser) => {
+      setUser(userData);
+    },
+    [setUser]
+  );
+
+  const logoutAction = useCallback(() => {
+    setUser(null);
+  }, [setUser]);
 
   const addToCart = useCallback((product: AppProduct) => {
     setCart((prev) => {
@@ -125,7 +141,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = useCallback(() => {
     setCart([]);
-    if (typeof window !== "undefined") localStorage.removeItem("rauma_cart");
+    if (typeof window !== "undefined") localStorage.removeItem(CART_KEY);
   }, []);
 
   const cartTotal = cart.reduce(
@@ -140,6 +156,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         value={{
           user: null,
           setUser,
+          loginAction,
+          logoutAction,
           cart: [],
           addToCart,
           removeFromCart,
@@ -159,6 +177,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         setUser,
+        loginAction,
+        logoutAction,
         cart,
         addToCart,
         removeFromCart,
