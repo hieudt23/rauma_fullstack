@@ -409,11 +409,11 @@ export default function StorefrontPage() {
                 Mua sắm ngay
               </Button>
               <Button
-                variant="outline"
-                className="border-white/60 text-white hover:bg-white/10 h-12 px-6 rounded-xl"
+                variant="ghost"
+                className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-green-700 h-12 px-8 rounded-xl font-semibold transition-all"
                 size="lg"
               >
-                Tìm hiểu thêm
+                Liên hệ ngay
               </Button>
             </div>
           </div>
