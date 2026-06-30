@@ -67,7 +67,7 @@ function ProductCard({
   return (
     <div className="group relative bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col">
       <div className="relative overflow-hidden bg-gray-50 aspect-[4/3]">
-        {!imgError ? (
+        {product.image && !imgError ? (
           <Image
             src={product.image}
             alt={product.name}
@@ -161,14 +161,16 @@ function CartSheet() {
                   className="flex gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100"
                 >
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                      sizes="64px"
-                      onError={() => {}}
-                    />
+                    {product.image && (
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                        sizes="64px"
+                        onError={() => {}}
+                      />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800 line-clamp-1">
@@ -264,7 +266,9 @@ export default function StorefrontPage() {
   }, []);
 
   const filteredProducts = useMemo(() => {
-    let result = products;
+    let result = products.filter(
+      (p) => p.name.toLowerCase() !== "hoa thanh quế"
+    );
     if (activeCategory !== "Tất cả") {
       result = result.filter((p) => p.category === activeCategory);
     }
