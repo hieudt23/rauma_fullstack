@@ -203,18 +203,6 @@ export default function LoginPage() {
                 )}
               </Button>
 
-              {/* Demo hint */}
-              <div className="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-xl space-y-1">
-                <p className="text-xs font-semibold text-blue-700">
-                  Tài khoản demo:
-                </p>
-                <p className="text-xs text-blue-600">
-                  Admin: <span className="font-mono">admin@ecommerce.com</span> / <span className="font-mono">admin123</span>
-                </p>
-                <p className="text-xs text-blue-600">
-                  Khách: <span className="font-mono">customer@ecommerce.com</span> / <span className="font-mono">user123</span>
-                </p>
-              </div>
             </form>
 
             <div className="mt-6 text-center space-y-2">
