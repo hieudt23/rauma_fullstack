@@ -574,15 +574,15 @@ export default function StorefrontPage() {
               <ul className="space-y-2 text-sm mb-4">
                 <li className="flex items-center gap-2">
                   <Phone className="w-4 h-4 text-green-400 flex-shrink-0" />
-                  0909 123 456
+                  <span className="text-green-400">0912345678</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-green-400 flex-shrink-0" />
-                  contact@raumaviet.vn
+                  <span className="text-white">hdinh.jd234@gmail.com</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <MapPin className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
-                  123 Đường Nguyễn Trãi, Q.1, TP.HCM
+                  <span className="text-white">Trường Đại học FPT Hà Nội</span>
                 </li>
               </ul>
               <div className="flex gap-2 mt-3">
