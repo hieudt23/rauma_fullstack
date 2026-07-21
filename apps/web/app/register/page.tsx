@@ -23,6 +23,10 @@ import {
   CardTitle,
   CardDescription,
 } from "@workspace/ui/components/card";
+import {
+  validatePasswordComplexity,
+  validateConfirmPassword,
+} from "@/lib/passwordPolicy";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -34,13 +38,27 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const handlePasswordBlur = () => {
+    if (!password) return;
+    setPasswordError(validatePasswordComplexity(password) ?? "");
+  };
+
+  const handleConfirmPasswordBlur = () => {
+    if (!confirmPassword) return;
+    setConfirmPasswordError(validateConfirmPassword(password, confirmPassword) ?? "");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setPasswordError("");
+    setConfirmPasswordError("");
 
     if (!name.trim()) {
       setError("Vui lòng nhập họ và tên.");
@@ -54,12 +72,19 @@ export default function RegisterPage() {
       setError("Địa chỉ email không hợp lệ.");
       return;
     }
-    if (password.length < 6) {
-      setError("Mật khẩu phải có ít nhất 6 ký tự.");
+
+    // Rule 1: primary password must independently satisfy the complexity policy.
+    const pwError = validatePasswordComplexity(password);
+    if (pwError) {
+      setPasswordError(pwError);
       return;
     }
-    if (password !== confirmPassword) {
-      setError("Xác nhận mật khẩu không khớp.");
+
+    // Rule 2 + 3: confirm-password length, then equality — only evaluated once
+    // the primary password is already valid, so the two checks never conflict.
+    const confirmError = validateConfirmPassword(password, confirmPassword);
+    if (confirmError) {
+      setConfirmPasswordError(confirmError);
       return;
     }
 
@@ -174,10 +199,16 @@ export default function RegisterPage() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
-                    placeholder="Ít nhất 6 ký tự"
-                    className="pl-10 pr-10 h-11 border-gray-200 focus-visible:border-green-400 focus-visible:ring-green-500/20"
+                    placeholder="Ít nhất 8 ký tự, gồm hoa, thường, số và ký tự đặc biệt"
+                    className={`pl-10 pr-10 h-11 border-gray-200 focus-visible:border-green-400 focus-visible:ring-green-500/20 ${
+                      passwordError ? "border-red-300" : ""
+                    }`}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (passwordError) setPasswordError("");
+                    }}
+                    onBlur={handlePasswordBlur}
                     disabled={loading}
                   />
                   <button
@@ -192,6 +223,9 @@ export default function RegisterPage() {
                     )}
                   </button>
                 </div>
+                {passwordError && (
+                  <p className="text-xs text-red-600 mt-1">{passwordError}</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -205,9 +239,15 @@ export default function RegisterPage() {
                     type={showConfirmPassword ? "text" : "password"}
                     autoComplete="new-password"
                     placeholder="Nhập lại mật khẩu"
-                    className="pl-10 pr-10 h-11 border-gray-200 focus-visible:border-green-400 focus-visible:ring-green-500/20"
+                    className={`pl-10 pr-10 h-11 border-gray-200 focus-visible:border-green-400 focus-visible:ring-green-500/20 ${
+                      confirmPasswordError ? "border-red-300" : ""
+                    }`}
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      if (confirmPasswordError) setConfirmPasswordError("");
+                    }}
+                    onBlur={handleConfirmPasswordBlur}
                     disabled={loading}
                   />
                   <button
@@ -222,6 +262,9 @@ export default function RegisterPage() {
                     )}
                   </button>
                 </div>
+                {confirmPasswordError && (
+                  <p className="text-xs text-red-600 mt-1">{confirmPasswordError}</p>
+                )}
               </div>
 
               {error && (

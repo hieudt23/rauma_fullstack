@@ -58,8 +58,8 @@ async function seedDatabase(conn: mongoose.Connection): Promise<void> {
   const userCount = await usersCol.countDocuments();
   if (userCount === 0) {
     const [adminHash, userHash] = await Promise.all([
-      bcrypt.hash("admin123", 10),
-      bcrypt.hash("user123", 10),
+      bcrypt.hash("Admin@123", 12),
+      bcrypt.hash("Customer@123", 12),
     ]);
     await usersCol.insertMany([
       {

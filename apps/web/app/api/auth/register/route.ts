@@ -3,6 +3,9 @@ import bcrypt from "bcryptjs";
 import { dbConnect } from "@/lib/dbConnect";
 import UserModel from "@/models/User";
 import { Types } from "mongoose";
+import { validatePasswordComplexity } from "@/lib/passwordPolicy";
+
+const BCRYPT_SALT_ROUNDS = 12;
 
 function isDuplicateKeyError(err: unknown): boolean {
   return (
@@ -54,11 +57,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (password.length < 6) {
-      return NextResponse.json(
-        { message: "Mật khẩu phải có ít nhất 6 ký tự." },
-        { status: 400 }
-      );
+    const passwordError = validatePasswordComplexity(password);
+    if (passwordError) {
+      return NextResponse.json({ message: passwordError }, { status: 400 });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
     const newUser = await UserModel.create({
       name: name.trim(),
