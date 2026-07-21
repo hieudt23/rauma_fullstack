@@ -27,4 +27,38 @@ const ProductModel: Model<IProduct> =
   (mongoose.models.Product as Model<IProduct>) ??
   mongoose.model<IProduct>("Product", ProductSchema);
 
+export interface ProductDTO {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  category: string;
+  unit: string;
+  image: string;
+}
+
+/** Chuyển product doc (lean hoặc hydrated) thành DTO gửi ra client. */
+export function toProductDTO(p: {
+  _id: unknown;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  category: string;
+  unit: string;
+  image: string;
+}): ProductDTO {
+  return {
+    id: String(p._id),
+    name: p.name,
+    description: p.description,
+    price: p.price,
+    stock: p.stock,
+    category: p.category,
+    unit: p.unit,
+    image: p.image,
+  };
+}
+
 export default ProductModel;

@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/dbConnect";
-import ProductModel from "@/models/Product";
+import ProductModel, { toProductDTO } from "@/models/Product";
 import { Types } from "mongoose";
+import { requireAdmin } from "@/lib/auth";
+import { validateProductField } from "@/lib/validation";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+const FORBIDDEN = NextResponse.json(
+  { message: "Không có quyền truy cập." },
+  { status: 403 }
+);
+
 export async function PATCH(req: NextRequest, context: RouteContext) {
   try {
+    if (!(await requireAdmin(req))) return FORBIDDEN;
+
     await dbConnect();
 
     const { id } = await context.params;
@@ -14,13 +23,20 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ message: "ID sản phẩm không hợp lệ." }, { status: 400 });
     }
 
-    const body = await req.json();
+    const body = (await req.json()) as Record<string, unknown>;
     const allowed = ["name", "description", "price", "stock", "category", "unit", "image"] as const;
     const update: Record<string, unknown> = {};
 
     for (const field of allowed) {
       if (field in body) {
-        update[field] = body[field];
+        let value = body[field];
+        if (field === "price" || field === "stock") value = Number(value);
+        if (typeof value === "string") value = value.trim();
+
+        const err = validateProductField(field, value);
+        if (err) return NextResponse.json({ message: err }, { status: 400 });
+
+        update[field] = value;
       }
     }
 
@@ -38,18 +54,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ message: "Không tìm thấy sản phẩm." }, { status: 404 });
     }
 
-    return NextResponse.json({
-      product: {
-        id: (doc._id as Types.ObjectId).toString(),
-        name: doc.name,
-        description: doc.description,
-        price: doc.price,
-        stock: doc.stock,
-        category: doc.category,
-        unit: doc.unit,
-        image: doc.image,
-      },
-    });
+    return NextResponse.json({ product: toProductDTO(doc) });
   } catch {
     return NextResponse.json({ message: "Lỗi server. Vui lòng thử lại." }, { status: 500 });
   }
@@ -57,6 +62,8 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
 
 export async function DELETE(req: NextRequest, context: RouteContext) {
   try {
+    if (!(await requireAdmin(req))) return FORBIDDEN;
+
     await dbConnect();
 
     const { id } = await context.params;

@@ -27,4 +27,29 @@ const UserModel: Model<IUser> =
   (mongoose.models.User as Model<IUser>) ??
   mongoose.model<IUser>("User", UserSchema);
 
+export interface UserDTO {
+  id: string;
+  name: string;
+  email: string;
+  role: "USER" | "ADMIN";
+  status: "ACTIVE" | "BANNED";
+}
+
+/** Chuyển user doc (lean hoặc hydrated) thành DTO an toàn gửi ra client. */
+export function toUserDTO(u: {
+  _id: unknown;
+  name: string;
+  email: string;
+  role: "USER" | "ADMIN";
+  status: "ACTIVE" | "BANNED";
+}): UserDTO {
+  return {
+    id: String(u._id),
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    status: u.status,
+  };
+}
+
 export default UserModel;

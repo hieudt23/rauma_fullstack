@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/dbConnect";
-import ProductModel from "@/models/Product";
-import { Types } from "mongoose";
+import ProductModel, { toProductDTO } from "@/models/Product";
+import { requireAdmin } from "@/lib/auth";
+import { validateProductField } from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,17 +15,7 @@ export async function GET(req: NextRequest) {
       category && category !== "Tất cả" ? { category } : {};
 
     const docs = await ProductModel.find(query).lean();
-
-    const products = docs.map((p) => ({
-      id: (p._id as Types.ObjectId).toString(),
-      name: p.name,
-      description: p.description,
-      price: p.price,
-      stock: p.stock,
-      category: p.category,
-      unit: p.unit,
-      image: p.image,
-    }));
+    const products = docs.map(toProductDTO);
 
     return NextResponse.json({ products }, { status: 200 });
   } catch {
@@ -37,48 +28,42 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!(await requireAdmin(req)))
+      return NextResponse.json(
+        { message: "Không có quyền truy cập." },
+        { status: 403 }
+      );
+
     await dbConnect();
 
-    const body = await req.json();
-    const { name, description, price, stock, category, unit, image } = body as {
-      name: string;
-      description?: string;
-      price: number;
-      stock?: number;
-      category: string;
-      unit?: string;
-      image?: string;
-    };
+    const body = (await req.json()) as Record<string, unknown>;
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const description = typeof body.description === "string" ? body.description.trim() : "";
+    const price = Number(body.price);
+    const stock = body.stock === undefined ? 0 : Number(body.stock);
+    const category = typeof body.category === "string" ? body.category.trim() : "";
+    const unit = typeof body.unit === "string" && body.unit.trim() ? body.unit.trim() : "Sản phẩm";
+    const image =
+      typeof body.image === "string" && body.image.trim()
+        ? body.image.trim()
+        : `https://picsum.photos/seed/${Date.now()}/400/300`;
 
-    if (!name || !price || !category) {
-      return NextResponse.json(
-        { message: "Tên, giá và danh mục sản phẩm là bắt buộc." },
-        { status: 400 }
-      );
+    for (const [field, value] of Object.entries({ name, description, price, stock, category, unit, image })) {
+      const err = validateProductField(field as never, value);
+      if (err) return NextResponse.json({ message: err }, { status: 400 });
     }
 
     const doc = await ProductModel.create({
       name,
-      description: description ?? "",
-      price: Number(price),
-      stock: Number(stock ?? 0),
+      description,
+      price,
+      stock,
       category,
-      unit: unit ?? "Sản phẩm",
-      image: image ?? `https://picsum.photos/seed/${Date.now()}/400/300`,
+      unit,
+      image,
     });
 
-    const product = {
-      id: (doc._id as Types.ObjectId).toString(),
-      name: doc.name,
-      description: doc.description,
-      price: doc.price,
-      stock: doc.stock,
-      category: doc.category,
-      unit: doc.unit,
-      image: doc.image,
-    };
-
-    return NextResponse.json({ product }, { status: 201 });
+    return NextResponse.json({ product: toProductDTO(doc) }, { status: 201 });
   } catch {
     return NextResponse.json(
       { message: "Lỗi server. Vui lòng thử lại." },

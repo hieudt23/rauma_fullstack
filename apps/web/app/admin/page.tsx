@@ -332,7 +332,7 @@ function AddProductDialog({
 
 export default function AdminPage() {
   const router = useRouter();
-  const { user, setUser } = useApp();
+  const { user, hydrated, logoutAction } = useApp();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "products">(
@@ -351,11 +351,11 @@ export default function AdminPage() {
 
   // Auth guard
   useEffect(() => {
-    if (user === null) return; // still hydrating
+    if (!hydrated) return; // wait for localStorage read to finish
     if (!user || user.role !== "ADMIN") {
       router.push("/login");
     }
-  }, [user, router]);
+  }, [user, hydrated, router]);
 
   const fetchUsers = useCallback(async () => {
     setLoadingUsers(true);
@@ -509,7 +509,7 @@ export default function AdminPage() {
           </div>
           <button
             onClick={() => {
-              setUser(null);
+              logoutAction();
               router.push("/");
             }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors"

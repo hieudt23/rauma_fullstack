@@ -7,7 +7,6 @@ interface MongooseCache {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var _mongooseCache: MongooseCache | undefined;
 }
 
@@ -57,26 +56,25 @@ async function seedDatabase(conn: mongoose.Connection): Promise<void> {
 
   const userCount = await usersCol.countDocuments();
   if (userCount === 0) {
-    const [adminHash, userHash] = await Promise.all([
-      bcrypt.hash("Admin@123", 12),
-      bcrypt.hash("Customer@123", 12),
-    ]);
-    await usersCol.insertMany([
-      {
+    // Không cắm cứng mật khẩu admin trong source. Chỉ tạo admin khởi tạo khi
+    // credential được cấp qua biến môi trường (nên chỉ đặt ở dev/staging).
+    const adminEmail = process.env.SEED_ADMIN_EMAIL;
+    const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+
+    if (adminEmail && adminPassword) {
+      const adminHash = await bcrypt.hash(adminPassword, 12);
+      await usersCol.insertOne({
         name: "Quản Trị Viên",
-        email: "admin@ecommerce.com",
+        email: adminEmail.toLowerCase().trim(),
         password: adminHash,
         role: "ADMIN",
         status: "ACTIVE",
-      },
-      {
-        name: "Nguyễn Văn Khách",
-        email: "customer@ecommerce.com",
-        password: userHash,
-        role: "USER",
-        status: "ACTIVE",
-      },
-    ]);
+      });
+    } else {
+      console.warn(
+        "[seed] Bỏ qua tạo admin: chưa đặt SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD."
+      );
+    }
   }
 
   const productCount = await productsCol.countDocuments();

@@ -1,30 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/dbConnect";
-import UserModel from "@/models/User";
-import { Types } from "mongoose";
+import UserModel, { toUserDTO } from "@/models/User";
+import { requireAdmin } from "@/lib/auth";
 
-function toSafeUser(u: {
-  _id: unknown;
-  name: string;
-  email: string;
-  role: "USER" | "ADMIN";
-  status: "ACTIVE" | "BANNED";
-}) {
-  return {
-    id: (u._id as Types.ObjectId).toString(),
-    name: u.name,
-    email: u.email,
-    role: u.role,
-    status: u.status,
-  };
-}
+const FORBIDDEN = NextResponse.json(
+  { message: "Không có quyền truy cập." },
+  { status: 403 }
+);
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    if (!(await requireAdmin(req))) return FORBIDDEN;
+
     await dbConnect();
 
     const docs = await UserModel.find().lean();
-    const users = docs.map(toSafeUser);
+    const users = docs.map(toUserDTO);
 
     return NextResponse.json({ users }, { status: 200 });
   } catch {
@@ -37,6 +28,8 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   try {
+    if (!(await requireAdmin(req))) return FORBIDDEN;
+
     await dbConnect();
 
     const body = await req.json();
@@ -53,7 +46,7 @@ export async function PUT(req: NextRequest) {
     user.status = user.status === "ACTIVE" ? "BANNED" : "ACTIVE";
     await user.save();
 
-    return NextResponse.json({ user: toSafeUser(user) }, { status: 200 });
+    return NextResponse.json({ user: toUserDTO(user) }, { status: 200 });
   } catch {
     return NextResponse.json(
       { message: "Lỗi server. Vui lòng thử lại." },
@@ -64,6 +57,8 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    if (!(await requireAdmin(req))) return FORBIDDEN;
+
     await dbConnect();
 
     const { searchParams } = new URL(req.url);

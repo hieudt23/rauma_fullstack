@@ -37,6 +37,7 @@ const CART_KEY = "rauma_cart";
 
 interface AppContextType {
   user: AppUser | null;
+  hydrated: boolean;
   setUser: (user: AppUser | null) => void;
   loginAction: (userData: AppUser) => void;
   logoutAction: () => void;
@@ -69,12 +70,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (storedUser) {
         try {
           setUserState(JSON.parse(storedUser));
-        } catch {}
+        } catch {
+          localStorage.removeItem(AUTH_SESSION_KEY);
+        }
       }
       if (storedCart) {
         try {
           setCart(JSON.parse(storedCart));
-        } catch {}
+        } catch {
+          localStorage.removeItem(CART_KEY);
+        }
       }
       setHydrated(true);
     }
@@ -96,6 +101,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logoutAction = useCallback(() => {
+    // Xóa cookie phiên phía server (nguồn danh tính thật), rồi dọn state client.
+    if (typeof window !== "undefined") {
+      fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    }
     setUser(null);
   }, [setUser]);
 
@@ -155,6 +164,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       <AppContext.Provider
         value={{
           user: null,
+          hydrated: false,
           setUser,
           loginAction,
           logoutAction,
@@ -176,6 +186,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider
       value={{
         user,
+        hydrated: true,
         setUser,
         loginAction,
         logoutAction,

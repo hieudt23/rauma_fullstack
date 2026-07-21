@@ -249,7 +249,7 @@ function CartSheet() {
 }
 
 export default function StorefrontPage() {
-  const { user, setUser, addToCart } = useApp();
+  const { user, logoutAction, addToCart } = useApp();
   const [products, setProducts] = useState<AppProduct[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("Tất cả");
@@ -350,7 +350,7 @@ export default function StorefrontPage() {
                     </Link>
                   )}
                   <button
-                    onClick={() => setUser(null)}
+                    onClick={logoutAction}
                     className="p-2 rounded-xl hover:bg-red-50 text-gray-500 hover:text-red-500 transition-colors"
                     title="Đăng xuất"
                   >

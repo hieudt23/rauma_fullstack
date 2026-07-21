@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { dbConnect } from "@/lib/dbConnect";
-import UserModel from "@/models/User";
-import { Types } from "mongoose";
+import UserModel, { toUserDTO } from "@/models/User";
+import { createSession } from "@/lib/auth";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 15 * 60 * 1000;
@@ -95,13 +95,11 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const safeUser = {
-      id: (user._id as Types.ObjectId).toString(),
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-    };
+    const safeUser = toUserDTO(user);
+
+    // Cấp phiên có chữ ký (cookie HttpOnly). Đây là bằng chứng danh tính
+    // duy nhất mà server tin — không phải object client giữ trong localStorage.
+    await createSession({ userId: safeUser.id, role: user.role });
 
     return NextResponse.json({ user: safeUser }, { status: 200 });
   } catch (error) {

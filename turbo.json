@@ -1,6 +1,13 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalEnv": [
+    "MONGODB_URI",
+    "AUTH_SECRET",
+    "SEED_ADMIN_EMAIL",
+    "SEED_ADMIN_PASSWORD",
+    "NODE_ENV"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

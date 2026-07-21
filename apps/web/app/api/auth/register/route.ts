@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { dbConnect } from "@/lib/dbConnect";
-import UserModel from "@/models/User";
-import { Types } from "mongoose";
+import UserModel, { toUserDTO } from "@/models/User";
 import { validatePasswordComplexity } from "@/lib/passwordPolicy";
 
 const BCRYPT_SALT_ROUNDS = 12;
@@ -80,15 +79,8 @@ export async function POST(req: NextRequest) {
       password: hashedPassword,
     });
 
-    const safeUser = {
-      id: (newUser._id as Types.ObjectId).toString(),
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-    };
-
     return NextResponse.json(
-      { message: "Đăng ký thành công!", user: safeUser },
+      { message: "Đăng ký thành công!", user: toUserDTO(newUser) },
       { status: 201 }
     );
   } catch (error) {
